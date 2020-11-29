@@ -12,3 +12,9 @@ runtest:
 
 run: 
 	./main
+
+buildgraph:
+	clang  -Wall -pedantic -lSDL2_Image graphtest.c -o testgraph `pkg-config --libs sdl2`
+
+rungra:
+	./testgraph
