@@ -13,8 +13,14 @@
 #define TOP 2
 #define BOTTOM 3
 
-#define NUMCELLSX 20
-#define NUMCELLSY 20
+#define COIN 2
+#define POWERUP 3
+#define PATH 1
+#define BARRIER 0
+
+
+#define NUMCELLSX 50
+#define NUMCELLSY 40
 void setDirectionPlayerRender();
 void keyboardHandler(const char *);
 void initPlayerResources();
@@ -22,6 +28,11 @@ void initMap();
 void initNPCS();
 double getMod(double,double);
 int msleep(unsigned int tms);
+void collectCoin(int);
+void collectPowerUp(int);
+void movePlayer();
+void checkMapForPoints();
+int getIndexByXY(int, int);
 
 // Utility macros
 #define CHECK_ERROR(test, message) \
@@ -53,14 +64,19 @@ int playerDirection;
 Cell cells[NUMCELLSX*NUMCELLSY];
 NPC  *npcs;
 int numNPCS;
+double step=1;
+
+double mapDimY=16*NUMCELLSY;
+double mapDimX=16*NUMCELLSX;
 
     
 // Window dimensions
-static const int width = 17*NUMCELLSX-17;
-static const int height = 17*NUMCELLSY+34;
+static const int width = 16*NUMCELLSX;
+static const int height = 16*NUMCELLSY+34;
 int npcY[]={87,107,127,147};
 int npcX[]={7,27,47,67,87,107,127,147};
 int mapX[]={0,17,34,51};
+
 
 //PLAYER
 
@@ -117,10 +133,7 @@ int main(int argc, char **argv) {
     // Initial renderer color
     bool running = true;
     bool endingPowerUp = true;//This flag indicates if the powerup is ending
-    double step=3;
-    double mapDimY=17*NUMCELLSY-17;
-    double mapDimX=17*NUMCELLSX-17;
-
+setDirectionPlayerRender();
 
 
     #pragma omp parallel section
@@ -151,12 +164,13 @@ int main(int argc, char **argv) {
             // Clear screen
             SDL_RenderClear(renderer);
             
+            
             //RENDER MAP
-            for(int i=0;i<NUMCELLSX;i++){
-                windowRectCell.x=i*16;
-                for(int j=0; j<NUMCELLSY;j++){
-                    textureRectCell.x=mapX[cells[i*j].resType];
-                    windowRectCell.y=j*16;
+            for(int i=0;i<NUMCELLSY;i++){
+                windowRectCell.y=i*16;
+                for(int j=0; j<NUMCELLSX;j++){
+                    textureRectCell.x=mapX[cells[i*NUMCELLSX+j].resType];
+                    windowRectCell.x=j*16;
                     SDL_RenderCopy(renderer, spriteSheet, &textureRectCell, &windowRectCell);
                 }
             }
@@ -205,23 +219,14 @@ int main(int argc, char **argv) {
         #pragma omp single //inertial movement on player
             {
                 while(running){
-                    if(playerDirection==TOP){
-                        playerY=getMod(playerY-step,mapDimY);
-                    }
-                    if(playerDirection==BOTTOM){
-                        playerY=getMod(playerY+step,mapDimY);
-                    }
-                    if(playerDirection==LEFT){
-                        playerX=getMod(playerX-step,mapDimX);
-                    }
-                    if(playerDirection==RIGTH){
-                        playerX=getMod(playerX+step,mapDimX);
-                    }
-                    msleep(50);
+                    movePlayer();
+                    checkMapForPoints();
+                    msleep(20);
                 }
                 
 
             }
+        
     }
     // Release resources
     SDL_DestroyTexture(spriteSheet);
@@ -232,11 +237,74 @@ int main(int argc, char **argv) {
 
     return 0;
 }
+int getIndexByXY(int x, int y){
+    if(playerDirection==BOTTOM||playerDirection==RIGTH){
+        return (x/16)+(y/16)*NUMCELLSX;
+    }
+    return ((x+8)/16)+((y+8)/16)*NUMCELLSX;
+    
+}
+void checkMapForPoints(){
+    int tmpx,
+        tmpy,
+        type;
+    if(playerDirection==BOTTOM||playerDirection==RIGTH){
+        tmpx=playerX/16;
+        tmpy=playerY/16;
+    }
+    else{
+        tmpx=(playerX+8)/16;
+        tmpy=(playerY+8)/16;
+
+    }
+
+    
+    type=cells[tmpy*NUMCELLSX+tmpx].resType;
+    
+    if (type==COIN){
+        collectCoin(tmpy*NUMCELLSX+tmpx);
+
+    }
+    else if(type==POWERUP){
+        collectPowerUp(tmpy*NUMCELLSX+tmpx);
+
+    }
+
+}
+void movePlayer(){
+    if(playerDirection==TOP){
+        if(cells[getIndexByXY(playerX,playerY-9)].resType)
+            playerY=getMod(playerY-step,mapDimY);
+    }
+    if(playerDirection==BOTTOM){
+        if(cells[getIndexByXY(playerX,playerY+16)].resType)
+            playerY=getMod(playerY+step,mapDimY);
+    }
+    if(playerDirection==LEFT){
+        if(cells[getIndexByXY(playerX-9,playerY)].resType)
+            playerX=getMod(playerX-step,mapDimX);
+    }
+    if(playerDirection==RIGTH){
+        if(cells[getIndexByXY(playerX+16,playerY)].resType||playerX/16>=NUMCELLSX-1)
+            playerX=getMod(playerX+step,mapDimX);
+    }
+
+}
+void collectCoin(int index){
+    printf("Coin collected!\n");
+    cells[index].resType=PATH;
+
+}
+void collectPowerUp(int index){
+    printf("Power-up collected!\n");
+    cells[index].resType=PATH;
+
+}
 int msleep(unsigned int tms) {
   return usleep(tms * 1000);
 }
 double getMod(double x,double mod){
-    if(x<0){
+    if(x<-13){
         return mod;
     }
     else if(x>mod){
@@ -264,9 +332,23 @@ void initNPCS(){
 void initMap(){
     for(int i=0; i< NUMCELLSX*NUMCELLSY; i++){
         cells[i].isPath=true;
-        cells[i].resType=1;
+        cells[i].resType=COIN;
         cells[i].hasPoints=true;
+        if(i<NUMCELLSX||i%NUMCELLSX==0||
+            i%NUMCELLSX==NUMCELLSX-1||i>NUMCELLSX*NUMCELLSY-NUMCELLSX){
+            cells[i].resType=BARRIER;
+            
+        }
     }
+    cells[20*3].resType=POWERUP;
+    cells[20*4].resType=POWERUP;
+    int ina=NUMCELLSX*(NUMCELLSY/2);
+    int inb=ina+NUMCELLSX;
+    cells[ina].resType=PATH;
+    cells[ina+NUMCELLSX-1].resType=PATH;
+    cells[inb].resType=PATH;
+    cells[inb+NUMCELLSX-1].resType=PATH;
+    
     
     windowRectCell.x=0;
     windowRectCell.y=0;
@@ -279,9 +361,10 @@ void initMap(){
     textureRectCell.h=16;
 }
 void initPlayerResources(){
-    playerDirection=LEFT;
-    playerX=0;
-    playerY=0;
+    playerDirection=RIGTH;
+    
+    playerX=17;
+    playerY=17;
     windowRectPlayer.x = 0;
     windowRectPlayer.y = 0;
     windowRectPlayer.w = 13;
@@ -306,6 +389,7 @@ void setDirectionPlayerRender(){
             else if(playerDirection==BOTTOM){
                 textureRectPlayer.y = 66;
             }
+
 }
 
 void keyboardHandler(const char *key){
@@ -317,26 +401,27 @@ void keyboardHandler(const char *key){
         printf("Key A pressed \n");
         playerDirection=LEFT;
         setDirectionPlayerRender();
-        playerX-=10;
+        playerY=round(playerY/16)*16+2;
+
         
     } 
     else if(strcmp(key, "S") == 0) {
         printf("Key S pressed \n");
         playerDirection=BOTTOM;
         setDirectionPlayerRender();
-        playerY+=10;
+        playerX=round(playerX/16)*16+1;
     }
     else if(strcmp(key, "D") == 0) {
         printf("Key D pressed \n");
         playerDirection=RIGTH;
         setDirectionPlayerRender();
-        playerX+=10;
+        playerY=round(playerY/16)*16+2;
     }
     else if(strcmp(key, "W") == 0) {
         printf("Key W pressed \n");
         playerDirection=TOP;
         setDirectionPlayerRender();
-        playerY-=10;
+        playerX=round(playerX/16)*16+1;
     } 
     else{
         printf("Pressed %s key\n",key);
