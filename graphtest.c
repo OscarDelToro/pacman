@@ -18,7 +18,7 @@ int main(int argc, char** args)
 
     //'windowRect' defines the dimensions of the rendering sprite on window
     SDL_Rect windowRect;
-    windowRect.x = 0;
+    windowRect.x = 300;
     windowRect.y = 0;
     windowRect.w = 140;
     windowRect.h = 200;
