@@ -5,7 +5,7 @@ build:
 	clang -Xpreprocessor -fopenmp -lomp main.c -o main
 
 buildtest:
-	clang -Xpreprocessor -fopenmp -lomp  -Wall -pedantic testfile.c -o test `pkg-config --libs sdl2`
+	clang -Xpreprocessor -fopenmp -lomp  -lSDL2_Image -Wall -pedantic testfile.c -o test `pkg-config --libs sdl2`
 
 runtest:
 	./test
