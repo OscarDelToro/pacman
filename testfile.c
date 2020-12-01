@@ -9,7 +9,7 @@
 #include <omp.h>
 
 #define LEFT 0
-#define RIGTH 1
+#define RIGHT 1
 #define TOP 2
 #define BOTTOM 3
 
@@ -19,8 +19,10 @@
 #define BARRIER 0
 
 
-#define NUMCELLSX 50
+#define NUMCELLSX 30
 #define NUMCELLSY 40
+#define POWERUPDURATION 10000 //milliseconds
+
 void setDirectionPlayerRender();
 void keyboardHandler(const char *);
 void initPlayerResources();
@@ -33,6 +35,13 @@ void collectPowerUp(int);
 void movePlayer();
 void checkMapForPoints();
 int getIndexByXY(int, int);
+void checkCollision();
+void NPCController(int);
+void moveNPC(int);
+int randomInRange(int,int);
+void changeNPCDirection(int,int);
+bool isInCollision(int);
+void powerUpDriver();
 
 // Utility macros
 #define CHECK_ERROR(test, message) \
@@ -65,6 +74,7 @@ Cell cells[NUMCELLSX*NUMCELLSY];
 NPC  *npcs;
 int numNPCS;
 double step=1;
+double stepNPC=1;
 
 double mapDimY=16*NUMCELLSY;
 double mapDimX=16*NUMCELLSX;
@@ -76,6 +86,7 @@ static const int height = 16*NUMCELLSY+34;
 int npcY[]={87,107,127,147};
 int npcX[]={7,27,47,67,87,107,127,147};
 int mapX[]={0,17,34,51};
+int currentPowerUp = 0;
 
 
 //PLAYER
@@ -87,8 +98,11 @@ SDL_Rect windowRectPlayer,
     windowRectNPC,
     textureRectNPC;
 
+bool running = true;
+bool endingPowerUp = true;//This flag indicates if the powerup is ending
+
 int main(int argc, char **argv) {
-    printf("test: %d\n",-1%127);
+    srand(time(0)); 
     if (argc>1){
         numNPCS=atoi(argv[1]);
     }
@@ -131,12 +145,12 @@ int main(int argc, char **argv) {
     int framesEight;
     int framesTwo;
     // Initial renderer color
-    bool running = true;
-    bool endingPowerUp = true;//This flag indicates if the powerup is ending
+
+
 setDirectionPlayerRender();
 
 
-    #pragma omp parallel section
+    #pragma omp parallel num_threads(numNPCS+2)
     {
         
         #pragma omp master task //should be the rendering and events processor 
@@ -181,14 +195,16 @@ setDirectionPlayerRender();
                 windowRectNPC.y=npcs[i].y;
                 if(npcs[i].isEdible){
                     textureRectNPC.y=167;
-                    
-                    if(endingPowerUp){
+                    if(!npcs[i].isAlive){
+                        textureRectNPC.y=184;
+                        textureRectNPC.x=npcX[framesFour];
+                    }
+                    else if(endingPowerUp){
                         textureRectNPC.x=npcX[framesFour]; 
                     }
                     else
                         textureRectNPC.x=npcX[framesTwo]; 
-                    
-                       
+                        
                 }
                 else{
                     if(npcs[i].isAlive){
@@ -199,6 +215,8 @@ setDirectionPlayerRender();
                         textureRectNPC.y=184;
                         textureRectNPC.x=npcX[framesFour];
                     }
+                    
+                    
                 }
                 SDL_RenderCopy(renderer, spriteSheet, &textureRectNPC, &windowRectNPC);
                 
@@ -209,23 +227,28 @@ setDirectionPlayerRender();
             windowRectPlayer.x=playerX;
             windowRectPlayer.y=playerY;  
             SDL_RenderCopy(renderer, spriteSheet, &textureRectPlayer, &windowRectPlayer);
-
-
             // Draw
-
             // Show what was drawn
             SDL_RenderPresent(renderer);
+        }
+        #pragma omp task
+        {
+            NPCController(omp_get_thread_num());
         }
         #pragma omp single //inertial movement on player
             {
                 while(running){
                     movePlayer();
+                    checkCollision();
+                    powerUpDriver();
                     checkMapForPoints();
                     msleep(20);
                 }
                 
 
             }
+        
+        
         
     }
     // Release resources
@@ -237,25 +260,163 @@ setDirectionPlayerRender();
 
     return 0;
 }
+void powerUpDriver(){
+    if(currentPowerUp>0){
+        currentPowerUp-=20;
+        if(currentPowerUp<=POWERUPDURATION/4){
+            endingPowerUp=true;
+        }
+        if(currentPowerUp<=20){//restore things to before power up
+            for(int i=0; i< numNPCS; i++){
+                npcs[i].isEdible=false;
+                //npcs[i].isAlive=true;
+            }
+            stepNPC=step;   
+            currentPowerUp = 0;
+        }
+    }
+
+}
+void changeNPCDirection(int index,int dir){
+    switch (dir)
+    {
+    case TOP:
+        npcs[index].direction=TOP;
+        npcs[index].x=round(npcs[index].x/16)*16+1;
+        break;
+    
+    case BOTTOM:
+        npcs[index].direction=BOTTOM;
+        npcs[index].x=round(npcs[index].x/16)*16+1;
+        break;
+
+    case LEFT:
+        npcs[index].direction=LEFT;
+        npcs[index].y=round(npcs[index].y/16)*16+2;
+        
+        break;
+    
+    case RIGHT:
+        npcs[index].direction=RIGHT;
+        npcs[index].y=round(npcs[index].y/16)*16+2;
+        
+        break;
+    
+    default:
+        break;
+    }
+
+}
+bool isInCollision(int index){
+    switch (npcs[index].direction)
+    {
+    case TOP:
+        return !(cells[getIndexByXY(npcs[index].x,npcs[index].y-9)].resType);
+        break;
+    case BOTTOM:
+        return !(cells[getIndexByXY(npcs[index].x,npcs[index].y+16)].resType);
+        break;
+    case LEFT:
+        return !(cells[getIndexByXY(npcs[index].x-9,npcs[index].y)].resType);
+        break;
+    case RIGHT:
+        return !(cells[getIndexByXY(npcs[index].x+16,npcs[index].y)].resType||playerX/16>=NUMCELLSX-1);
+        break;
+    
+    default:
+        return false;
+        break;
+    }
+
+}
+int randomInRange(int lower, int upper){
+    return (rand() % (upper - lower + 1)) + lower;
+}
+void NPCController(int ind){
+    if(ind>1){
+        int index=ind-2;
+        int nextDirChange=0;
+        while(running){
+            if(nextDirChange==0){
+                changeNPCDirection(index,randomInRange(0,3));
+                nextDirChange=randomInRange(50,150)*20;
+            }
+            if(isInCollision(index)){
+                
+                do{
+                    changeNPCDirection(index,randomInRange(0,3));
+                }while(isInCollision(index));
+                nextDirChange=randomInRange(50,150)*20;
+
+            }
+            nextDirChange-=20;
+            moveNPC(index);
+            msleep(20);
+        }
+
+    }
+    
+}
+void moveNPC(int index){
+    int dir=npcs[index].direction;
+    if(dir==TOP){
+        if(cells[getIndexByXY(npcs[index].x,npcs[index].y-9)].resType)
+            npcs[index].y=getMod(npcs[index].y-stepNPC,mapDimY);
+    }
+    if(dir==BOTTOM){
+        if(cells[getIndexByXY(npcs[index].x,npcs[index].y+16)].resType)
+            npcs[index].y=getMod(npcs[index].y+stepNPC,mapDimY);
+    }
+    if(dir==LEFT){
+        if(cells[getIndexByXY(npcs[index].x-9,npcs[index].y)].resType)
+            npcs[index].x=getMod(npcs[index].x-stepNPC,mapDimX);
+    }
+    if(dir==RIGHT){
+        if(cells[getIndexByXY(npcs[index].x+16,npcs[index].y)].resType||playerX/16>=NUMCELLSX-1)
+            npcs[index].x=getMod(npcs[index].x+stepNPC,mapDimX);
+    }
+}
+void checkCollision(){
+    int tmpxP,
+        tmpyP,
+        tmpxNP,
+        tmpyNP;
+    tmpxP=playerX/16;
+    tmpyP=playerY/16;
+    for(int i=0; i<numNPCS;i++){
+        tmpxNP=npcs[i].x/16;
+        tmpyNP=npcs[i].y/16;
+        if(tmpxNP==tmpxP&&tmpyNP==tmpyP){
+            if(npcs[i].isAlive&&npcs[i].isEdible){
+                npcs[i].isAlive=false;
+                printf("Pacman smashed NPC number %d\n",i);
+            }
+            else if(npcs[i].isAlive&&!npcs[i].isEdible){
+                printf("Pacman slayed by NPC number %d\n",i);
+            }
+        }
+
+    }
+
+
+}
 int getIndexByXY(int x, int y){
-    if(playerDirection==BOTTOM||playerDirection==RIGTH){
+    if(playerDirection==BOTTOM||playerDirection==RIGHT){
         return (x/16)+(y/16)*NUMCELLSX;
     }
     return ((x+8)/16)+((y+8)/16)*NUMCELLSX;
-    
 }
 void checkMapForPoints(){
     int tmpx,
         tmpy,
         type;
-    if(playerDirection==BOTTOM||playerDirection==RIGTH){
+    if(playerDirection==BOTTOM||playerDirection==RIGHT){
         tmpx=playerX/16;
         tmpy=playerY/16;
     }
     else{
         tmpx=(playerX+8)/16;
         tmpy=(playerY+8)/16;
-
     }
 
     
@@ -284,7 +445,7 @@ void movePlayer(){
         if(cells[getIndexByXY(playerX-9,playerY)].resType)
             playerX=getMod(playerX-step,mapDimX);
     }
-    if(playerDirection==RIGTH){
+    if(playerDirection==RIGHT){
         if(cells[getIndexByXY(playerX+16,playerY)].resType||playerX/16>=NUMCELLSX-1)
             playerX=getMod(playerX+step,mapDimX);
     }
@@ -297,6 +458,13 @@ void collectCoin(int index){
 }
 void collectPowerUp(int index){
     printf("Power-up collected!\n");
+    for(int i=0; i< numNPCS; i++){
+        npcs[i].isEdible=true;
+    }
+    stepNPC=0.5;
+    endingPowerUp=false;
+    currentPowerUp = POWERUPDURATION;
+    
     cells[index].resType=PATH;
 
 }
@@ -317,10 +485,10 @@ void initNPCS(){
     npcs=malloc(numNPCS* sizeof *npcs);
     for(int i=0; i<numNPCS; i++){
         npcs[i].isAlive=true;
-        npcs[i].direction=TOP;
+        npcs[i].direction=BOTTOM;
         npcs[i].isEdible=false;
-        npcs[i].x=20*i;
-        npcs[i].y=0;
+        npcs[i].x=16*i+17;
+        npcs[i].y=17;
     }
     windowRectNPC.x=0;
     windowRectNPC.y=0;
@@ -337,10 +505,9 @@ void initMap(){
         if(i<NUMCELLSX||i%NUMCELLSX==0||
             i%NUMCELLSX==NUMCELLSX-1||i>NUMCELLSX*NUMCELLSY-NUMCELLSX){
             cells[i].resType=BARRIER;
-            
         }
     }
-    cells[20*3].resType=POWERUP;
+    
     cells[20*4].resType=POWERUP;
     int ina=NUMCELLSX*(NUMCELLSY/2);
     int inb=ina+NUMCELLSX;
@@ -348,7 +515,12 @@ void initMap(){
     cells[ina+NUMCELLSX-1].resType=PATH;
     cells[inb].resType=PATH;
     cells[inb+NUMCELLSX-1].resType=PATH;
-    
+
+    cells[130].resType=BARRIER;
+    cells[131].resType=BARRIER;
+    cells[132].resType=BARRIER;
+    cells[133].resType=BARRIER;
+    cells[134].resType=BARRIER;
     
     windowRectCell.x=0;
     windowRectCell.y=0;
@@ -361,10 +533,10 @@ void initMap(){
     textureRectCell.h=16;
 }
 void initPlayerResources(){
-    playerDirection=RIGTH;
+    playerDirection=RIGHT;
     
-    playerX=17;
-    playerY=17;
+    playerX=16;
+    playerY=32;
     windowRectPlayer.x = 0;
     windowRectPlayer.y = 0;
     windowRectPlayer.w = 13;
@@ -380,7 +552,7 @@ void setDirectionPlayerRender(){
     if(playerDirection==LEFT){
                 textureRectPlayer.y = 7;
             }
-            else if(playerDirection==RIGTH){
+            else if(playerDirection==RIGHT){
                 textureRectPlayer.y = 27;
             }
             else if(playerDirection==TOP){
@@ -402,18 +574,16 @@ void keyboardHandler(const char *key){
         playerDirection=LEFT;
         setDirectionPlayerRender();
         playerY=round(playerY/16)*16+2;
-
-        
     } 
     else if(strcmp(key, "S") == 0) {
         printf("Key S pressed \n");
-        playerDirection=BOTTOM;
+        playerDirection=BOTTOM;  
         setDirectionPlayerRender();
         playerX=round(playerX/16)*16+1;
     }
     else if(strcmp(key, "D") == 0) {
         printf("Key D pressed \n");
-        playerDirection=RIGTH;
+        playerDirection=RIGHT;
         setDirectionPlayerRender();
         playerY=round(playerY/16)*16+2;
     }
