@@ -44,6 +44,9 @@ void changeNPCDirection(int,int);
 bool isInCollision(int);
 void powerUpDriver();
 void killPacman();
+void buildMap();
+int countCoins();
+
 
 // Utility macros
 #define CHECK_ERROR(test, message) \
@@ -118,7 +121,7 @@ SDL_Surface* text;
 SDL_Color white = { 255, 255, 255 };
 
 SDL_Texture* textTexture;
-
+int remainingCoins;
 
 
 bool running = true;
@@ -141,6 +144,8 @@ int main(int argc, char **argv) {
     // Initialize  cells and things
     initNPCS();
     initMap();
+    buildMap();
+    remainingCoins=countCoins();
 
     // Initialize SDL
     CHECK_ERROR(SDL_Init(SDL_INIT_VIDEO) != 0, SDL_GetError());
@@ -176,6 +181,7 @@ int main(int argc, char **argv) {
     int framesEight;
     int framesTwo;
     int pointer=0;
+  
     // Initial renderer color
 
     setDirectionPlayerRender();
@@ -267,8 +273,15 @@ int main(int argc, char **argv) {
             SDL_RenderCopy(renderer, spriteSheet, &textureRectPlayer, &windowRectPlayer);
             //RENDER TEXT
             char textScore[100];
+            
             sprintf(textScore,"Score: %d",score);
-            text = TTF_RenderText_Solid( font,textScore, white );
+            if(remainingCoins==0){
+                text = TTF_RenderText_Solid( font,"Ganaste el juego", white );
+            }
+            else{
+                text = TTF_RenderText_Solid( font,textScore, white );
+            }
+            
             textTexture = SDL_CreateTextureFromSurface( renderer, text );
             SDL_QueryTexture(textTexture, NULL, NULL, &destWindowRect.w, &destWindowRect.h);
             
@@ -320,6 +333,7 @@ int main(int argc, char **argv) {
 
     return 0;
 }
+
 void powerUpDriver(){
     if(currentPowerUp>0){
         currentPowerUp-=20;
@@ -523,9 +537,19 @@ void movePlayer(){
     }
 
 }
+int countCoins(){
+    int res=0;
+    for(int i=0; i<NUMCELLSX*NUMCELLSY;i++){
+        if(cells[i].resType==COIN){
+            res++;
+        }
+    }
+    return res;
+}
 void collectCoin(int index){
     printf("Coin collected!\n");
     score+=10;
+    remainingCoins--;
     cells[index].resType=PATH;
 
 }
@@ -582,19 +606,12 @@ void initMap(){
         }
     }
     
-    cells[20*4].resType=POWERUP;
     int ina=NUMCELLSX*(NUMCELLSY/2);
     int inb=ina+NUMCELLSX;
     cells[ina].resType=PATH;
     cells[ina+NUMCELLSX-1].resType=PATH;
     cells[inb].resType=PATH;
     cells[inb+NUMCELLSX-1].resType=PATH;
-
-    cells[130].resType=BARRIER;
-    cells[131].resType=BARRIER;
-    cells[132].resType=BARRIER;
-    cells[133].resType=BARRIER;
-    cells[134].resType=BARRIER;
     
     windowRectCell.x=0;
     windowRectCell.y=0;
@@ -674,4 +691,446 @@ void keyboardHandler(const char *key){
 void killPacman(){
     pacmanIsAlive=false;
 }
+void buildMap(){
+    cells[NUMCELLSX*10+8].resType=BARRIER;
+    cells[NUMCELLSX*9+8].resType=BARRIER;
+    cells[NUMCELLSX*8+8].resType=BARRIER;
+    cells[NUMCELLSX*10+7].resType=BARRIER;
+    cells[NUMCELLSX*9+7].resType=BARRIER;
+    cells[NUMCELLSX*8+7].resType=BARRIER;
+    cells[NUMCELLSX*10+6].resType=BARRIER;
+    cells[NUMCELLSX*9+6].resType=BARRIER;
+    cells[NUMCELLSX*8+6].resType=BARRIER;
+    cells[NUMCELLSX*10+9].resType=BARRIER;
+    cells[NUMCELLSX*9+9].resType=BARRIER;
+    cells[NUMCELLSX*8+9].resType=BARRIER;
 
+    cells[NUMCELLSX*10+20].resType=BARRIER;
+    cells[NUMCELLSX*9+20].resType=BARRIER;
+    cells[NUMCELLSX*8+20].resType=BARRIER;
+    cells[NUMCELLSX*10+23].resType=BARRIER;
+    cells[NUMCELLSX*9+23].resType=BARRIER;
+    cells[NUMCELLSX*8+23].resType=BARRIER;
+    cells[NUMCELLSX*10+22].resType=BARRIER;
+    cells[NUMCELLSX*9+22].resType=BARRIER;
+    cells[NUMCELLSX*8+22].resType=BARRIER;
+    cells[NUMCELLSX*10+21].resType=BARRIER;
+    cells[NUMCELLSX*9+21].resType=BARRIER;
+    cells[NUMCELLSX*8+21].resType=BARRIER;
+
+    cells[NUMCELLSX*31+20].resType=BARRIER;
+    cells[NUMCELLSX*30+20].resType=BARRIER;
+    cells[NUMCELLSX*29+20].resType=BARRIER;
+    cells[NUMCELLSX*31+23].resType=BARRIER;
+    cells[NUMCELLSX*30+23].resType=BARRIER;
+    cells[NUMCELLSX*29+23].resType=BARRIER;
+    cells[NUMCELLSX*31+22].resType=BARRIER;
+    cells[NUMCELLSX*30+22].resType=BARRIER;
+    cells[NUMCELLSX*29+22].resType=BARRIER;
+    cells[NUMCELLSX*31+21].resType=BARRIER;
+    cells[NUMCELLSX*30+21].resType=BARRIER;
+    cells[NUMCELLSX*29+21].resType=BARRIER;
+
+    cells[NUMCELLSX*31+8].resType=BARRIER;
+    cells[NUMCELLSX*30+8].resType=BARRIER;
+    cells[NUMCELLSX*29+8].resType=BARRIER;
+    cells[NUMCELLSX*31+7].resType=BARRIER;
+    cells[NUMCELLSX*30+7].resType=BARRIER;
+    cells[NUMCELLSX*29+7].resType=BARRIER;
+    cells[NUMCELLSX*31+6].resType=BARRIER;
+    cells[NUMCELLSX*30+6].resType=BARRIER;
+    cells[NUMCELLSX*29+6].resType=BARRIER;
+    cells[NUMCELLSX*31+9].resType=BARRIER;
+    cells[NUMCELLSX*30+9].resType=BARRIER;
+    cells[NUMCELLSX*29+9].resType=BARRIER;
+
+    cells[NUMCELLSX*24+10].resType=BARRIER;
+    cells[NUMCELLSX*24+11].resType=BARRIER;
+    cells[NUMCELLSX*24+12].resType=BARRIER;
+    cells[NUMCELLSX*24+13].resType=BARRIER;
+    cells[NUMCELLSX*24+14].resType=BARRIER;
+    cells[NUMCELLSX*24+15].resType=BARRIER;
+    cells[NUMCELLSX*24+16].resType=BARRIER;
+    cells[NUMCELLSX*24+17].resType=BARRIER;
+    cells[NUMCELLSX*24+18].resType=BARRIER;
+    cells[NUMCELLSX*24+19].resType=BARRIER;
+
+    cells[NUMCELLSX*26+10].resType=BARRIER;
+    cells[NUMCELLSX*26+11].resType=BARRIER;
+    cells[NUMCELLSX*26+12].resType=BARRIER;
+    cells[NUMCELLSX*26+13].resType=BARRIER;
+    cells[NUMCELLSX*26+14].resType=BARRIER;
+    cells[NUMCELLSX*26+15].resType=BARRIER;
+    cells[NUMCELLSX*26+16].resType=BARRIER;
+    cells[NUMCELLSX*26+17].resType=BARRIER;
+    cells[NUMCELLSX*26+18].resType=BARRIER;
+    cells[NUMCELLSX*26+19].resType=BARRIER;
+    cells[NUMCELLSX*27+14].resType=BARRIER;
+    cells[NUMCELLSX*27+15].resType=BARRIER;
+    cells[NUMCELLSX*28+14].resType=BARRIER;
+    cells[NUMCELLSX*28+15].resType=BARRIER;
+    cells[NUMCELLSX*29+14].resType=BARRIER;
+    cells[NUMCELLSX*29+15].resType=BARRIER;
+    cells[NUMCELLSX*30+14].resType=BARRIER;
+    cells[NUMCELLSX*30+15].resType=BARRIER;
+    cells[NUMCELLSX*31+14].resType=BARRIER;
+    cells[NUMCELLSX*31+15].resType=BARRIER;
+    cells[NUMCELLSX*31+16].resType=BARRIER;
+    cells[NUMCELLSX*31+17].resType=BARRIER;
+    cells[NUMCELLSX*31+12].resType=BARRIER;
+    cells[NUMCELLSX*31+13].resType=BARRIER;
+
+    cells[NUMCELLSX*18+7].resType=BARRIER;
+    cells[NUMCELLSX*19+7].resType=BARRIER;
+    cells[NUMCELLSX*20+7].resType=BARRIER;
+    cells[NUMCELLSX*21+7].resType=BARRIER;
+    cells[NUMCELLSX*21+8].resType=BARRIER;
+    cells[NUMCELLSX*21+9].resType=BARRIER;
+    cells[NUMCELLSX*21+10].resType=BARRIER;
+    cells[NUMCELLSX*21+19].resType=BARRIER;
+    cells[NUMCELLSX*21+20].resType=BARRIER;
+    cells[NUMCELLSX*21+21].resType=BARRIER;
+    cells[NUMCELLSX*21+22].resType=BARRIER;
+    cells[NUMCELLSX*18+22].resType=BARRIER;
+    cells[NUMCELLSX*19+22].resType=BARRIER;
+    cells[NUMCELLSX*20+22].resType=BARRIER;
+
+    cells[NUMCELLSX*22+1].resType=BARRIER;
+    cells[NUMCELLSX*22+2].resType=BARRIER;
+    cells[NUMCELLSX*22+3].resType=BARRIER;
+    cells[NUMCELLSX*19+1].resType=BARRIER;
+    cells[NUMCELLSX*19+2].resType=BARRIER;
+    cells[NUMCELLSX*19+3].resType=BARRIER;
+
+    cells[NUMCELLSX*22+26].resType=BARRIER;
+    cells[NUMCELLSX*22+27].resType=BARRIER;
+    cells[NUMCELLSX*22+28].resType=BARRIER;
+    cells[NUMCELLSX*19+26].resType=BARRIER;
+    cells[NUMCELLSX*19+27].resType=BARRIER;
+    cells[NUMCELLSX*19+28].resType=BARRIER;
+
+
+    cells[NUMCELLSX*25+1].resType=BARRIER;
+    cells[NUMCELLSX*25+2].resType=BARRIER;
+    cells[NUMCELLSX*25+3].resType=BARRIER;
+
+    cells[NUMCELLSX*25+6].resType=BARRIER;
+    cells[NUMCELLSX*25+7].resType=BARRIER;
+    cells[NUMCELLSX*25+5].resType=BARRIER;
+    cells[NUMCELLSX*24+6].resType=BARRIER;
+    cells[NUMCELLSX*26+6].resType=BARRIER;
+
+    cells[NUMCELLSX*25+23].resType=BARRIER;
+    cells[NUMCELLSX*25+22].resType=BARRIER;
+    cells[NUMCELLSX*25+24].resType=BARRIER;
+    cells[NUMCELLSX*24+23].resType=BARRIER;
+    cells[NUMCELLSX*26+23].resType=BARRIER;
+
+    cells[NUMCELLSX*28+1].resType=BARRIER;
+    cells[NUMCELLSX*28+2].resType=BARRIER;
+    cells[NUMCELLSX*28+3].resType=BARRIER;
+
+    cells[NUMCELLSX*31+1].resType=BARRIER;
+    cells[NUMCELLSX*31+2].resType=BARRIER;
+    cells[NUMCELLSX*31+3].resType=BARRIER;
+
+    cells[NUMCELLSX*34+1].resType=BARRIER;
+    cells[NUMCELLSX*34+2].resType=BARRIER;
+    cells[NUMCELLSX*34+3].resType=BARRIER;
+
+    cells[NUMCELLSX*25+26].resType=BARRIER;
+    cells[NUMCELLSX*25+27].resType=BARRIER;
+    cells[NUMCELLSX*25+28].resType=BARRIER;
+
+    cells[NUMCELLSX*28+26].resType=BARRIER;
+    cells[NUMCELLSX*28+27].resType=BARRIER;
+    cells[NUMCELLSX*28+28].resType=BARRIER;
+
+    cells[NUMCELLSX*31+26].resType=BARRIER;
+    cells[NUMCELLSX*31+27].resType=BARRIER;
+    cells[NUMCELLSX*31+28].resType=BARRIER;
+
+    cells[NUMCELLSX*34+26].resType=BARRIER;
+    cells[NUMCELLSX*34+27].resType=BARRIER;
+    cells[NUMCELLSX*34+28].resType=BARRIER;
+
+    cells[NUMCELLSX*35+8].resType=BARRIER;
+    cells[NUMCELLSX*36+8].resType=BARRIER;
+    cells[NUMCELLSX*37+8].resType=BARRIER;
+    cells[NUMCELLSX*34+8].resType=BARRIER;
+    cells[NUMCELLSX*34+9].resType=BARRIER;
+    cells[NUMCELLSX*34+10].resType=BARRIER;
+    cells[NUMCELLSX*34+11].resType=BARRIER;
+    cells[NUMCELLSX*34+12].resType=BARRIER;
+    cells[NUMCELLSX*34+13].resType=BARRIER;
+    cells[NUMCELLSX*34+14].resType=BARRIER;
+    cells[NUMCELLSX*34+15].resType=BARRIER;
+    cells[NUMCELLSX*34+16].resType=BARRIER;
+    cells[NUMCELLSX*34+17].resType=BARRIER;
+    cells[NUMCELLSX*34+18].resType=BARRIER;
+    cells[NUMCELLSX*34+19].resType=BARRIER;
+    cells[NUMCELLSX*34+20].resType=BARRIER;
+    cells[NUMCELLSX*34+21].resType=BARRIER;
+    cells[NUMCELLSX*35+21].resType=BARRIER;
+    cells[NUMCELLSX*36+21].resType=BARRIER;
+    cells[NUMCELLSX*37+21].resType=BARRIER;
+    cells[NUMCELLSX*37+8].resType=BARRIER;
+    cells[NUMCELLSX*37+9].resType=BARRIER;
+    cells[NUMCELLSX*37+10].resType=BARRIER;
+    cells[NUMCELLSX*37+11].resType=BARRIER;
+    cells[NUMCELLSX*37+12].resType=BARRIER;
+    cells[NUMCELLSX*37+13].resType=BARRIER;
+    cells[NUMCELLSX*37+16].resType=BARRIER;
+    cells[NUMCELLSX*37+17].resType=BARRIER;
+    cells[NUMCELLSX*37+18].resType=BARRIER;
+    cells[NUMCELLSX*37+19].resType=BARRIER;
+    cells[NUMCELLSX*37+20].resType=BARRIER;
+    cells[NUMCELLSX*37+21].resType=BARRIER;
+
+    cells[NUMCELLSX*36+26].resType=BARRIER;
+    cells[NUMCELLSX*36+25].resType=BARRIER;
+    cells[NUMCELLSX*36+24].resType=BARRIER;
+    cells[NUMCELLSX*37+26].resType=BARRIER;
+    cells[NUMCELLSX*37+25].resType=BARRIER;
+    cells[NUMCELLSX*37+24].resType=BARRIER;
+
+    cells[NUMCELLSX*36+3].resType=BARRIER;
+    cells[NUMCELLSX*36+5].resType=BARRIER;
+    cells[NUMCELLSX*36+4].resType=BARRIER;
+    cells[NUMCELLSX*37+3].resType=BARRIER;
+    cells[NUMCELLSX*37+5].resType=BARRIER;
+    cells[NUMCELLSX*37+4].resType=BARRIER;
+    
+    cells[NUMCELLSX*33+6].resType=BARRIER;
+
+    cells[NUMCELLSX*33+23].resType=BARRIER;
+
+
+    cells[NUMCELLSX*13+14].resType=BARRIER;
+    cells[NUMCELLSX*13+15].resType=BARRIER;
+    cells[NUMCELLSX*12+14].resType=BARRIER;
+    cells[NUMCELLSX*12+15].resType=BARRIER;
+    cells[NUMCELLSX*11+14].resType=BARRIER;
+    cells[NUMCELLSX*11+15].resType=BARRIER;
+    cells[NUMCELLSX*10+14].resType=BARRIER;
+    cells[NUMCELLSX*10+15].resType=BARRIER;
+    cells[NUMCELLSX*9+14].resType=BARRIER;
+    cells[NUMCELLSX*9+15].resType=BARRIER;
+    cells[NUMCELLSX*8+14].resType=BARRIER;
+    cells[NUMCELLSX*8+15].resType=BARRIER;
+    cells[NUMCELLSX*7+14].resType=BARRIER;
+    cells[NUMCELLSX*7+15].resType=BARRIER;
+    cells[NUMCELLSX*6+14].resType=BARRIER;
+    cells[NUMCELLSX*6+15].resType=BARRIER;
+    cells[NUMCELLSX*5+14].resType=BARRIER;
+    cells[NUMCELLSX*5+15].resType=BARRIER;
+    cells[NUMCELLSX*4+14].resType=BARRIER;
+    cells[NUMCELLSX*4+15].resType=BARRIER;
+
+    cells[NUMCELLSX*4+16].resType=BARRIER;
+    cells[NUMCELLSX*4+17].resType=BARRIER;
+    cells[NUMCELLSX*4+18].resType=BARRIER;
+    cells[NUMCELLSX*4+19].resType=BARRIER;
+    cells[NUMCELLSX*4+20].resType=BARRIER;
+    cells[NUMCELLSX*4+21].resType=BARRIER;
+    cells[NUMCELLSX*4+22].resType=BARRIER;
+    cells[NUMCELLSX*4+23].resType=BARRIER;
+    cells[NUMCELLSX*3+23].resType=BARRIER;
+    cells[NUMCELLSX*2+23].resType=BARRIER;
+    cells[NUMCELLSX*2+24].resType=BARRIER;
+    cells[NUMCELLSX*2+25].resType=BARRIER;
+    cells[NUMCELLSX*2+26].resType=BARRIER;
+
+    cells[NUMCELLSX*4+13].resType=BARRIER;
+    cells[NUMCELLSX*4+12].resType=BARRIER;
+    cells[NUMCELLSX*4+11].resType=BARRIER;
+    cells[NUMCELLSX*4+10].resType=BARRIER;
+    cells[NUMCELLSX*4+9].resType=BARRIER;
+    cells[NUMCELLSX*4+8].resType=BARRIER;
+    cells[NUMCELLSX*4+7].resType=BARRIER;
+    cells[NUMCELLSX*4+6].resType=BARRIER;
+    cells[NUMCELLSX*3+6].resType=BARRIER;
+    cells[NUMCELLSX*2+6].resType=BARRIER;
+    cells[NUMCELLSX*2+5].resType=BARRIER;
+    cells[NUMCELLSX*2+4].resType=BARRIER;
+    cells[NUMCELLSX*2+3].resType=BARRIER;
+
+    cells[NUMCELLSX*17+2].resType=BARRIER;
+    cells[NUMCELLSX*17+3].resType=BARRIER;
+    cells[NUMCELLSX*17+4].resType=BARRIER;
+
+    cells[NUMCELLSX*15+1].resType=BARRIER;
+    cells[NUMCELLSX*15+2].resType=BARRIER;
+    cells[NUMCELLSX*15+3].resType=BARRIER;
+
+    cells[NUMCELLSX*13+2].resType=BARRIER;
+    cells[NUMCELLSX*13+3].resType=BARRIER;
+    cells[NUMCELLSX*13+4].resType=BARRIER;
+    
+    cells[NUMCELLSX*11+1].resType=BARRIER;
+    cells[NUMCELLSX*11+2].resType=BARRIER;
+    cells[NUMCELLSX*11+3].resType=BARRIER;
+    
+    cells[NUMCELLSX*9+2].resType=BARRIER;
+    cells[NUMCELLSX*9+3].resType=BARRIER;
+    cells[NUMCELLSX*9+4].resType=BARRIER;
+
+    cells[NUMCELLSX*7+1].resType=BARRIER;
+    cells[NUMCELLSX*7+2].resType=BARRIER;
+    cells[NUMCELLSX*7+3].resType=BARRIER;
+
+
+    cells[NUMCELLSX*17+27].resType=BARRIER;
+    cells[NUMCELLSX*17+26].resType=BARRIER;
+    cells[NUMCELLSX*17+25].resType=BARRIER;
+
+    cells[NUMCELLSX*15+28].resType=BARRIER;
+    cells[NUMCELLSX*15+27].resType=BARRIER;
+    cells[NUMCELLSX*15+26].resType=BARRIER;
+
+    cells[NUMCELLSX*13+27].resType=BARRIER;
+    cells[NUMCELLSX*13+26].resType=BARRIER;
+    cells[NUMCELLSX*13+25].resType=BARRIER;
+    
+    cells[NUMCELLSX*11+28].resType=BARRIER;
+    cells[NUMCELLSX*11+27].resType=BARRIER;
+    cells[NUMCELLSX*11+26].resType=BARRIER;
+    
+    cells[NUMCELLSX*9+27].resType=BARRIER;
+    cells[NUMCELLSX*9+26].resType=BARRIER;
+    cells[NUMCELLSX*9+25].resType=BARRIER;
+
+    cells[NUMCELLSX*7+28].resType=BARRIER;
+    cells[NUMCELLSX*7+27].resType=BARRIER;
+    cells[NUMCELLSX*7+26].resType=BARRIER;
+
+    cells[NUMCELLSX*5+27].resType=BARRIER;
+    cells[NUMCELLSX*5+26].resType=BARRIER;
+    cells[NUMCELLSX*5+25].resType=BARRIER;
+    cells[NUMCELLSX*4+27].resType=BARRIER;
+    cells[NUMCELLSX*4+26].resType=BARRIER;
+    cells[NUMCELLSX*4+25].resType=BARRIER;
+
+    cells[NUMCELLSX*5+2].resType=BARRIER;
+    cells[NUMCELLSX*5+3].resType=BARRIER;
+    cells[NUMCELLSX*5+4].resType=BARRIER;
+    cells[NUMCELLSX*4+2].resType=BARRIER;
+    cells[NUMCELLSX*4+3].resType=BARRIER;
+    cells[NUMCELLSX*4+4].resType=BARRIER;
+
+    cells[NUMCELLSX*6+6].resType=BARRIER;
+    cells[NUMCELLSX*6+7].resType=BARRIER;
+    cells[NUMCELLSX*6+8].resType=BARRIER;
+    cells[NUMCELLSX*6+9].resType=BARRIER;
+    cells[NUMCELLSX*6+10].resType=BARRIER;
+    cells[NUMCELLSX*6+11].resType=BARRIER;
+    cells[NUMCELLSX*6+12].resType=BARRIER;
+
+
+    cells[NUMCELLSX*7+12].resType=BARRIER;
+    cells[NUMCELLSX*8+12].resType=BARRIER;
+    cells[NUMCELLSX*9+12].resType=BARRIER;
+    cells[NUMCELLSX*10+12].resType=BARRIER;
+    cells[NUMCELLSX*11+12].resType=BARRIER;
+    cells[NUMCELLSX*12+12].resType=BARRIER;
+    cells[NUMCELLSX*13+12].resType=BARRIER;
+
+    
+    cells[NUMCELLSX*6+23].resType=BARRIER;
+    cells[NUMCELLSX*6+22].resType=BARRIER;
+    cells[NUMCELLSX*6+21].resType=BARRIER;
+    cells[NUMCELLSX*6+20].resType=BARRIER;
+    cells[NUMCELLSX*6+19].resType=BARRIER;
+    cells[NUMCELLSX*6+18].resType=BARRIER;
+    cells[NUMCELLSX*6+17].resType=BARRIER;
+    
+    cells[NUMCELLSX*7+17].resType=BARRIER;
+    cells[NUMCELLSX*8+17].resType=BARRIER;
+    cells[NUMCELLSX*9+17].resType=BARRIER;
+    cells[NUMCELLSX*10+17].resType=BARRIER;
+    cells[NUMCELLSX*11+17].resType=BARRIER;
+    cells[NUMCELLSX*12+17].resType=BARRIER;
+    cells[NUMCELLSX*13+17].resType=BARRIER;
+
+    cells[NUMCELLSX*2+8].resType=BARRIER;
+    cells[NUMCELLSX*2+9].resType=BARRIER;
+    cells[NUMCELLSX*2+10].resType=BARRIER;
+    cells[NUMCELLSX*2+11].resType=BARRIER;
+    cells[NUMCELLSX*2+12].resType=BARRIER;
+    cells[NUMCELLSX*2+13].resType=BARRIER;
+    cells[NUMCELLSX*2+14].resType=BARRIER;
+    cells[NUMCELLSX*2+15].resType=BARRIER;
+    cells[NUMCELLSX*2+16].resType=BARRIER;
+    cells[NUMCELLSX*2+17].resType=BARRIER;
+    cells[NUMCELLSX*2+18].resType=BARRIER;
+    cells[NUMCELLSX*2+19].resType=BARRIER;
+    cells[NUMCELLSX*2+20].resType=BARRIER;
+    cells[NUMCELLSX*2+21].resType=BARRIER;
+
+    cells[NUMCELLSX*13+6].resType=BARRIER;
+    cells[NUMCELLSX*13+7].resType=BARRIER;
+    cells[NUMCELLSX*13+8].resType=BARRIER;
+    cells[NUMCELLSX*13+9].resType=BARRIER;
+    cells[NUMCELLSX*12+6].resType=BARRIER;
+    cells[NUMCELLSX*12+7].resType=BARRIER;
+    cells[NUMCELLSX*12+8].resType=BARRIER;
+    cells[NUMCELLSX*12+9].resType=BARRIER;
+
+    cells[NUMCELLSX*13+20].resType=BARRIER;
+    cells[NUMCELLSX*13+21].resType=BARRIER;
+    cells[NUMCELLSX*13+22].resType=BARRIER;
+    cells[NUMCELLSX*13+23].resType=BARRIER;
+    cells[NUMCELLSX*12+20].resType=BARRIER;
+    cells[NUMCELLSX*12+21].resType=BARRIER;
+    cells[NUMCELLSX*12+22].resType=BARRIER;
+    cells[NUMCELLSX*12+23].resType=BARRIER;
+
+    cells[NUMCELLSX*15+8].resType=BARRIER;
+    cells[NUMCELLSX*15+9].resType=BARRIER;
+    cells[NUMCELLSX*15+10].resType=BARRIER;
+    cells[NUMCELLSX*15+11].resType=BARRIER;
+    cells[NUMCELLSX*15+12].resType=BARRIER;
+    cells[NUMCELLSX*15+13].resType=BARRIER;
+    cells[NUMCELLSX*15+14].resType=BARRIER;
+    cells[NUMCELLSX*15+15].resType=BARRIER;
+    cells[NUMCELLSX*15+16].resType=BARRIER;
+    cells[NUMCELLSX*15+17].resType=BARRIER;
+    cells[NUMCELLSX*15+18].resType=BARRIER;
+    cells[NUMCELLSX*15+19].resType=BARRIER;
+    cells[NUMCELLSX*15+20].resType=BARRIER;
+    cells[NUMCELLSX*15+21].resType=BARRIER;
+    
+    
+    cells[NUMCELLSX*17+13].resType=BARRIER;
+    cells[NUMCELLSX*17+14].resType=BARRIER;
+    cells[NUMCELLSX*17+15].resType=BARRIER;
+    cells[NUMCELLSX*17+16].resType=BARRIER;
+    cells[NUMCELLSX*18+13].resType=BARRIER;
+    cells[NUMCELLSX*18+14].resType=BARRIER;
+    cells[NUMCELLSX*18+15].resType=BARRIER;
+    cells[NUMCELLSX*18+16].resType=BARRIER;
+
+    cells[NUMCELLSX*17+9].resType=BARRIER;
+    cells[NUMCELLSX*17+10].resType=BARRIER;
+    cells[NUMCELLSX*17+11].resType=BARRIER;
+    cells[NUMCELLSX*18+9].resType=BARRIER;
+    cells[NUMCELLSX*18+10].resType=BARRIER;
+    cells[NUMCELLSX*18+11].resType=BARRIER;
+
+    cells[NUMCELLSX*17+18].resType=BARRIER;
+    cells[NUMCELLSX*17+19].resType=BARRIER;
+    cells[NUMCELLSX*17+20].resType=BARRIER;
+    cells[NUMCELLSX*18+18].resType=BARRIER;
+    cells[NUMCELLSX*18+19].resType=BARRIER;
+    cells[NUMCELLSX*18+20].resType=BARRIER;
+
+    cells[NUMCELLSX*1+1].resType=POWERUP;
+    cells[NUMCELLSX*38+1].resType=POWERUP;
+    cells[NUMCELLSX*1+28].resType=POWERUP;
+    cells[NUMCELLSX*38+28].resType=POWERUP;
+
+    cells[NUMCELLSX*17+12].resType=POWERUP;
+    cells[NUMCELLSX*17+17].resType=POWERUP;
+
+
+}
