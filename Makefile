@@ -1,20 +1,19 @@
-dependencies:
-	brew install libomp sdl2 sdl2_image sdl2_mixer sdl2_ttf pkg-config
+BREW_LIBS = libomp sdl2 sdl2_image sdl2_mixer sdl2_ttf pkg-config
+APP_NAME  =pacman
+LIBS 	  = -fopenmp -lomp  -lSDL2_Image -lSDL2_ttf -Wall -pedantic
+CC 		  =clang
+CFLAGS 	  = -Xpreprocessor
+PKG 	  = `pkg-config --libs sdl2`
+
+
 
 build:
-	clang -Xpreprocessor -fopenmp -lomp main.c -o main
+	$(CC) $(CFLAGS) $(LIBS) main.c -o ${APP_NAME} $(PKG)
 
-buildtest:
-	clang -Xpreprocessor -fopenmp -lomp  -lSDL2_Image -lSDL2_ttf -Wall -pedantic testfile.c -o test `pkg-config --libs sdl2`
-
-runtest:
-	./test
+dependencies:
+	brew install $(BREW_LIBS)
 
 run: 
-	./main
+	./$(APP_NAME) $(NUM_THREADS)
 
-buildgraph:
-	clang  -Wall -pedantic -lSDL2_Image graphtest.c -o testgraph `pkg-config --libs sdl2`
 
-rungra:
-	./testgraph
