@@ -110,7 +110,14 @@ SDL_Rect windowRectPlayer,
     windowRectCell,
     textureRectCell,
     windowRectNPC,
-    textureRectNPC;
+    textureRectNPC,
+    destWindowRect;
+
+TTF_Font* font;
+SDL_Surface* text;
+SDL_Color white = { 255, 255, 255 };
+
+SDL_Texture* textTexture;
 
 
 
@@ -138,7 +145,9 @@ int main(int argc, char **argv) {
     // Initialize SDL
     CHECK_ERROR(SDL_Init(SDL_INIT_VIDEO) != 0, SDL_GetError());
     CHECK_ERROR(IMG_Init(IMG_INIT_PNG)<0, SDL_GetError());
-    TTF_Init();
+    CHECK_ERROR(TTF_Init()<0,SDL_GetError());
+    font = TTF_OpenFont("font/8-bit-pusab.ttf", 10);
+    
     
 
     // Create an SDL window
@@ -171,6 +180,9 @@ int main(int argc, char **argv) {
 
     setDirectionPlayerRender();
 
+    destWindowRect.x=0;
+    destWindowRect.y=NUMCELLSY*16;
+
 
     #pragma omp parallel num_threads(numNPCS+2)
     {
@@ -195,7 +207,7 @@ int main(int argc, char **argv) {
 
             textureRectPlayer.x = playerFrame * textureRectPlayer.w +playerFrame*7+7;
 
-            SDL_SetRenderDrawColor(renderer, 0, 120, 0, 255);
+            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
             
             // Clear screen
             SDL_RenderClear(renderer);
@@ -254,6 +266,14 @@ int main(int argc, char **argv) {
             
             SDL_RenderCopy(renderer, spriteSheet, &textureRectPlayer, &windowRectPlayer);
             //RENDER TEXT
+            char textScore[100];
+            sprintf(textScore,"Score: %d",score);
+            text = TTF_RenderText_Solid( font,textScore, white );
+            textTexture = SDL_CreateTextureFromSurface( renderer, text );
+            SDL_QueryTexture(textTexture, NULL, NULL, &destWindowRect.w, &destWindowRect.h);
+            
+            
+            SDL_RenderCopy(renderer,textTexture,NULL,&destWindowRect);
             
             // Draw
             // Show what was drawn
