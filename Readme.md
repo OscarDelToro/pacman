@@ -11,9 +11,9 @@ Assumptions:
 
 
 ### Usage
-- Use the command ´make dependencies´ to install the dependencies of the project
-- Use the command ´make build´ to compile the project
-- Use the command ´make run´ to run the game
-- You can also select the number of enemies by using ´NUM_THREADS=4 make run´
+- Use the command `make dependencies` to install the dependencies of the project
+- Use the command `make build` to compile the project
+- Use the command `make run` to run the game
+- You can also select the number of enemies by using `NUM_THREADS=4 make run`
 
 
