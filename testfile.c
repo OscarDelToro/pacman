@@ -24,6 +24,8 @@
 #define NUMCELLSY 40
 #define POWERUPDURATION 10000 //milliseconds
 
+#define CELLWIDTH 16
+
 void setDirectionPlayerRender();
 void keyboardHandler(const char *);
 void initPlayerResources();
@@ -81,8 +83,8 @@ int numNPCS;
 double step=1;
 double stepNPC=1;
 
-double mapDimY=16*NUMCELLSY;
-double mapDimX=16*NUMCELLSX;
+double mapDimY=CELLWIDTH*NUMCELLSY;
+double mapDimX=CELLWIDTH*NUMCELLSX;
 
 double npcStartingX;
 double npcStartingY;
@@ -97,8 +99,8 @@ int combo=0;
 
     
 // Window dimensions
-static const int width = 16*NUMCELLSX;
-static const int height = 16*NUMCELLSY+34;
+static const int width = CELLWIDTH*NUMCELLSX;
+static const int height = CELLWIDTH*NUMCELLSY+34;
 int npcY[]={87,107,127,147};
 int npcX[]={7,27,47,67,87,107,127,147};
 int mapX[]={0,17,34,51};
@@ -187,7 +189,7 @@ int main(int argc, char **argv) {
     setDirectionPlayerRender();
 
     destWindowRect.x=0;
-    destWindowRect.y=NUMCELLSY*16;
+    destWindowRect.y=NUMCELLSY*CELLWIDTH;
 
 
     #pragma omp parallel num_threads(numNPCS+2)
@@ -221,10 +223,10 @@ int main(int argc, char **argv) {
             
             //RENDER MAP
             for(int i=0;i<NUMCELLSY;i++){
-                windowRectCell.y=i*16;
+                windowRectCell.y=i*CELLWIDTH;
                 for(int j=0; j<NUMCELLSX;j++){
                     textureRectCell.x=mapX[cells[i*NUMCELLSX+j].resType];
-                    windowRectCell.x=j*16;
+                    windowRectCell.x=j*CELLWIDTH;
                     SDL_RenderCopy(renderer, spriteSheet, &textureRectCell, &windowRectCell);
                 }
             }
@@ -302,8 +304,8 @@ int main(int argc, char **argv) {
                     while(!pacmanIsAlive){
                         if(pointer>10){
                             pacmanIsAlive=true;
-                            playerX=pacmanStartingX*16;
-                            playerY=pacmanStartingY*16;
+                            playerX=pacmanStartingX*CELLWIDTH;
+                            playerY=pacmanStartingY*CELLWIDTH;
                             pointer=0;
                             setDirectionPlayerRender();
                             break;
@@ -356,23 +358,23 @@ void changeNPCDirection(int index,int dir){
     {
     case TOP:
         npcs[index].direction=TOP;
-        npcs[index].x=round(npcs[index].x/16)*16+1;
+        npcs[index].x=round(npcs[index].x/CELLWIDTH)*CELLWIDTH+1;
         break;
     
     case BOTTOM:
         npcs[index].direction=BOTTOM;
-        npcs[index].x=round(npcs[index].x/16)*16+1;
+        npcs[index].x=round(npcs[index].x/CELLWIDTH)*CELLWIDTH+1;
         break;
 
     case LEFT:
         npcs[index].direction=LEFT;
-        npcs[index].y=round(npcs[index].y/16)*16+2;
+        npcs[index].y=round(npcs[index].y/CELLWIDTH)*CELLWIDTH+2;
         
         break;
     
     case RIGHT:
         npcs[index].direction=RIGHT;
-        npcs[index].y=round(npcs[index].y/16)*16+2;
+        npcs[index].y=round(npcs[index].y/CELLWIDTH)*CELLWIDTH+2;
         
         break;
     
@@ -388,13 +390,13 @@ bool isInCollision(int index){
         return !(cells[getIndexByXY(npcs[index].x,npcs[index].y-9)].resType);
         break;
     case BOTTOM:
-        return !(cells[getIndexByXY(npcs[index].x,npcs[index].y+16)].resType);
+        return !(cells[getIndexByXY(npcs[index].x,npcs[index].y+CELLWIDTH)].resType);
         break;
     case LEFT:
         return !(cells[getIndexByXY(npcs[index].x-9,npcs[index].y)].resType);
         break;
     case RIGHT:
-        return !(cells[getIndexByXY(npcs[index].x+16,npcs[index].y)].resType||playerX/16>=NUMCELLSX-1);
+        return !(cells[getIndexByXY(npcs[index].x+CELLWIDTH,npcs[index].y)].resType||playerX/CELLWIDTH>=NUMCELLSX-1);
         break;
     
     default:
@@ -447,7 +449,7 @@ void moveNPC(int index){
             npcs[index].y=getMod(npcs[index].y-stepNPC,mapDimY);
     }
     if(dir==BOTTOM){
-        if(cells[getIndexByXY(npcs[index].x,npcs[index].y+16)].resType)
+        if(cells[getIndexByXY(npcs[index].x,npcs[index].y+CELLWIDTH)].resType)
             npcs[index].y=getMod(npcs[index].y+stepNPC,mapDimY);
     }
     if(dir==LEFT){
@@ -455,7 +457,7 @@ void moveNPC(int index){
             npcs[index].x=getMod(npcs[index].x-stepNPC,mapDimX);
     }
     if(dir==RIGHT){
-        if(cells[getIndexByXY(npcs[index].x+16,npcs[index].y)].resType||playerX/16>=NUMCELLSX-1)
+        if(cells[getIndexByXY(npcs[index].x+CELLWIDTH,npcs[index].y)].resType||playerX/CELLWIDTH>=NUMCELLSX-1)
             npcs[index].x=getMod(npcs[index].x+stepNPC,mapDimX);
     }
 }
@@ -464,11 +466,11 @@ void checkCollision(){
         tmpyP,
         tmpxNP,
         tmpyNP;
-    tmpxP=playerX/16;
-    tmpyP=playerY/16;
+    tmpxP=playerX/CELLWIDTH;
+    tmpyP=playerY/CELLWIDTH;
     for(int i=0; i<numNPCS;i++){
-        tmpxNP=npcs[i].x/16;
-        tmpyNP=npcs[i].y/16;
+        tmpxNP=npcs[i].x/CELLWIDTH;
+        tmpyNP=npcs[i].y/CELLWIDTH;
         if(tmpxNP==tmpxP&&tmpyNP==tmpyP){
             if(npcs[i].isAlive&&npcs[i].isEdible){
                 npcs[i].isAlive=false;
@@ -488,21 +490,21 @@ void checkCollision(){
 }
 int getIndexByXY(int x, int y){
     if(playerDirection==BOTTOM||playerDirection==RIGHT){
-        return (x/16)+(y/16)*NUMCELLSX;
+        return (x/CELLWIDTH)+(y/CELLWIDTH)*NUMCELLSX;
     }
-    return ((x+8)/16)+((y+8)/16)*NUMCELLSX;
+    return ((x+8)/CELLWIDTH)+((y+8)/CELLWIDTH)*NUMCELLSX;
 }
 void checkMapForPoints(){
     int tmpx,
         tmpy,
         type;
     if(playerDirection==BOTTOM||playerDirection==RIGHT){
-        tmpx=playerX/16;
-        tmpy=playerY/16;
+        tmpx=playerX/CELLWIDTH;
+        tmpy=playerY/CELLWIDTH;
     }
     else{
-        tmpx=(playerX+8)/16;
-        tmpy=(playerY+8)/16;
+        tmpx=(playerX+8)/CELLWIDTH;
+        tmpy=(playerY+8)/CELLWIDTH;
     }
 
     
@@ -524,7 +526,7 @@ void movePlayer(){
             playerY=getMod(playerY-step,mapDimY);
     }
     if(playerDirection==BOTTOM){
-        if(cells[getIndexByXY(playerX,playerY+16)].resType)
+        if(cells[getIndexByXY(playerX,playerY+CELLWIDTH)].resType)
             playerY=getMod(playerY+step,mapDimY);
     }
     if(playerDirection==LEFT){
@@ -532,7 +534,7 @@ void movePlayer(){
             playerX=getMod(playerX-step,mapDimX);
     }
     if(playerDirection==RIGHT){
-        if(cells[getIndexByXY(playerX+16,playerY)].resType||playerX/16>=NUMCELLSX-1)
+        if(cells[getIndexByXY(playerX+CELLWIDTH,playerY)].resType||playerX/CELLWIDTH>=NUMCELLSX-1)
             playerX=getMod(playerX+step,mapDimX);
     }
 
@@ -585,8 +587,8 @@ void initNPCS(){
         npcs[i].isAlive=true;
         npcs[i].direction=BOTTOM;
         npcs[i].isEdible=false;
-        npcs[i].x=16*i+(npcStartingX*16-numNPCS*16/2);
-        npcs[i].y=npcStartingY*16;
+        npcs[i].x=CELLWIDTH*i+(npcStartingX*CELLWIDTH-numNPCS*CELLWIDTH/2);
+        npcs[i].y=npcStartingY*CELLWIDTH;
     }
     windowRectNPC.x=0;
     windowRectNPC.y=0;
@@ -615,19 +617,19 @@ void initMap(){
     
     windowRectCell.x=0;
     windowRectCell.y=0;
-    windowRectCell.w=16;
-    windowRectCell.h=16;
+    windowRectCell.w=CELLWIDTH;
+    windowRectCell.h=CELLWIDTH;
 
     textureRectCell.x=0;
     textureRectCell.y=199;
-    textureRectCell.w=16;
-    textureRectCell.h=16;
+    textureRectCell.w=CELLWIDTH;
+    textureRectCell.h=CELLWIDTH;
 }
 void initPlayerResources(){
     playerDirection=RIGHT;
     
-    playerX=pacmanStartingX*16;
-    playerY=pacmanStartingY*16;
+    playerX=pacmanStartingX*CELLWIDTH;
+    playerY=pacmanStartingY*CELLWIDTH;
     windowRectPlayer.x = 0;
     windowRectPlayer.y = 0;
     windowRectPlayer.w = 13;
@@ -664,25 +666,25 @@ void keyboardHandler(const char *key){
         printf("Key A pressed \n");
         playerDirection=LEFT;
         setDirectionPlayerRender();
-        playerY=round(playerY/16)*16+2;
+        playerY=round(playerY/CELLWIDTH)*CELLWIDTH+2;
     } 
     else if(strcmp(key, "S") == 0) {
         printf("Key S pressed \n");
         playerDirection=BOTTOM;  
         setDirectionPlayerRender();
-        playerX=round(playerX/16)*16+1;
+        playerX=round(playerX/CELLWIDTH)*CELLWIDTH+1;
     }
     else if(strcmp(key, "D") == 0) {
         printf("Key D pressed \n");
         playerDirection=RIGHT;
         setDirectionPlayerRender();
-        playerY=round(playerY/16)*16+2;
+        playerY=round(playerY/CELLWIDTH)*CELLWIDTH+2;
     }
     else if(strcmp(key, "W") == 0) {
         printf("Key W pressed \n");
         playerDirection=TOP;
         setDirectionPlayerRender();
-        playerX=round(playerX/16)*16+1;
+        playerX=round(playerX/CELLWIDTH)*CELLWIDTH+1;
     } 
     else{
         printf("Pressed %s key\n",key);
@@ -750,7 +752,7 @@ void buildMap(){
     cells[NUMCELLSX*24+13].resType=BARRIER;
     cells[NUMCELLSX*24+14].resType=BARRIER;
     cells[NUMCELLSX*24+15].resType=BARRIER;
-    cells[NUMCELLSX*24+16].resType=BARRIER;
+    cells[NUMCELLSX*24+CELLWIDTH].resType=BARRIER;
     cells[NUMCELLSX*24+17].resType=BARRIER;
     cells[NUMCELLSX*24+18].resType=BARRIER;
     cells[NUMCELLSX*24+19].resType=BARRIER;
@@ -761,7 +763,7 @@ void buildMap(){
     cells[NUMCELLSX*26+13].resType=BARRIER;
     cells[NUMCELLSX*26+14].resType=BARRIER;
     cells[NUMCELLSX*26+15].resType=BARRIER;
-    cells[NUMCELLSX*26+16].resType=BARRIER;
+    cells[NUMCELLSX*26+CELLWIDTH].resType=BARRIER;
     cells[NUMCELLSX*26+17].resType=BARRIER;
     cells[NUMCELLSX*26+18].resType=BARRIER;
     cells[NUMCELLSX*26+19].resType=BARRIER;
@@ -775,7 +777,7 @@ void buildMap(){
     cells[NUMCELLSX*30+15].resType=BARRIER;
     cells[NUMCELLSX*31+14].resType=BARRIER;
     cells[NUMCELLSX*31+15].resType=BARRIER;
-    cells[NUMCELLSX*31+16].resType=BARRIER;
+    cells[NUMCELLSX*31+CELLWIDTH].resType=BARRIER;
     cells[NUMCELLSX*31+17].resType=BARRIER;
     cells[NUMCELLSX*31+12].resType=BARRIER;
     cells[NUMCELLSX*31+13].resType=BARRIER;
@@ -865,7 +867,7 @@ void buildMap(){
     cells[NUMCELLSX*34+13].resType=BARRIER;
     cells[NUMCELLSX*34+14].resType=BARRIER;
     cells[NUMCELLSX*34+15].resType=BARRIER;
-    cells[NUMCELLSX*34+16].resType=BARRIER;
+    cells[NUMCELLSX*34+CELLWIDTH].resType=BARRIER;
     cells[NUMCELLSX*34+17].resType=BARRIER;
     cells[NUMCELLSX*34+18].resType=BARRIER;
     cells[NUMCELLSX*34+19].resType=BARRIER;
@@ -880,7 +882,7 @@ void buildMap(){
     cells[NUMCELLSX*37+11].resType=BARRIER;
     cells[NUMCELLSX*37+12].resType=BARRIER;
     cells[NUMCELLSX*37+13].resType=BARRIER;
-    cells[NUMCELLSX*37+16].resType=BARRIER;
+    cells[NUMCELLSX*37+CELLWIDTH].resType=BARRIER;
     cells[NUMCELLSX*37+17].resType=BARRIER;
     cells[NUMCELLSX*37+18].resType=BARRIER;
     cells[NUMCELLSX*37+19].resType=BARRIER;
@@ -927,7 +929,7 @@ void buildMap(){
     cells[NUMCELLSX*4+14].resType=BARRIER;
     cells[NUMCELLSX*4+15].resType=BARRIER;
 
-    cells[NUMCELLSX*4+16].resType=BARRIER;
+    cells[NUMCELLSX*4+CELLWIDTH].resType=BARRIER;
     cells[NUMCELLSX*4+17].resType=BARRIER;
     cells[NUMCELLSX*4+18].resType=BARRIER;
     cells[NUMCELLSX*4+19].resType=BARRIER;
@@ -1060,7 +1062,7 @@ void buildMap(){
     cells[NUMCELLSX*2+13].resType=BARRIER;
     cells[NUMCELLSX*2+14].resType=BARRIER;
     cells[NUMCELLSX*2+15].resType=BARRIER;
-    cells[NUMCELLSX*2+16].resType=BARRIER;
+    cells[NUMCELLSX*2+CELLWIDTH].resType=BARRIER;
     cells[NUMCELLSX*2+17].resType=BARRIER;
     cells[NUMCELLSX*2+18].resType=BARRIER;
     cells[NUMCELLSX*2+19].resType=BARRIER;
@@ -1093,7 +1095,7 @@ void buildMap(){
     cells[NUMCELLSX*15+13].resType=BARRIER;
     cells[NUMCELLSX*15+14].resType=BARRIER;
     cells[NUMCELLSX*15+15].resType=BARRIER;
-    cells[NUMCELLSX*15+16].resType=BARRIER;
+    cells[NUMCELLSX*15+CELLWIDTH].resType=BARRIER;
     cells[NUMCELLSX*15+17].resType=BARRIER;
     cells[NUMCELLSX*15+18].resType=BARRIER;
     cells[NUMCELLSX*15+19].resType=BARRIER;
@@ -1104,11 +1106,11 @@ void buildMap(){
     cells[NUMCELLSX*17+13].resType=BARRIER;
     cells[NUMCELLSX*17+14].resType=BARRIER;
     cells[NUMCELLSX*17+15].resType=BARRIER;
-    cells[NUMCELLSX*17+16].resType=BARRIER;
+    cells[NUMCELLSX*17+CELLWIDTH].resType=BARRIER;
     cells[NUMCELLSX*18+13].resType=BARRIER;
     cells[NUMCELLSX*18+14].resType=BARRIER;
     cells[NUMCELLSX*18+15].resType=BARRIER;
-    cells[NUMCELLSX*18+16].resType=BARRIER;
+    cells[NUMCELLSX*18+CELLWIDTH].resType=BARRIER;
 
     cells[NUMCELLSX*17+9].resType=BARRIER;
     cells[NUMCELLSX*17+10].resType=BARRIER;
