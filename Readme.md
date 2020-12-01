@@ -1,7 +1,8 @@
 ## PACMAN
 Authors:
-Francisco Mariano Amézquita Ramos
-Oscar Ernesto Del Toro Mendoza 
+======
+- Francisco Mariano Amézquita Ramos
+- Oscar Ernesto Del Toro Mendoza 
 
 
 Assumptions: 
