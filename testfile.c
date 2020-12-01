@@ -6,6 +6,7 @@
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
+#include <SDL2/SDL_ttf.h>
 #include <omp.h>
 
 #define LEFT 0
@@ -42,6 +43,7 @@ int randomInRange(int,int);
 void changeNPCDirection(int,int);
 bool isInCollision(int);
 void powerUpDriver();
+void killPacman();
 
 // Utility macros
 #define CHECK_ERROR(test, message) \
@@ -79,6 +81,17 @@ double stepNPC=1;
 double mapDimY=16*NUMCELLSY;
 double mapDimX=16*NUMCELLSX;
 
+double npcStartingX;
+double npcStartingY;
+
+double pacmanStartingX=NUMCELLSX/2;
+double pacmanStartingY=25;
+
+bool pacmanIsAlive=true;
+
+int score=0;
+int combo=0;
+
     
 // Window dimensions
 static const int width = 16*NUMCELLSX;
@@ -86,6 +99,7 @@ static const int height = 16*NUMCELLSY+34;
 int npcY[]={87,107,127,147};
 int npcX[]={7,27,47,67,87,107,127,147};
 int mapX[]={0,17,34,51};
+int deadframes[]={7,26,46,66,86,106,126,146,166,186,206,220};//si la bolita final no jala es 208
 int currentPowerUp = 0;
 
 
@@ -98,10 +112,17 @@ SDL_Rect windowRectPlayer,
     windowRectNPC,
     textureRectNPC;
 
+
+
 bool running = true;
 bool endingPowerUp = true;//This flag indicates if the powerup is ending
 
 int main(int argc, char **argv) {
+    
+
+    npcStartingX = NUMCELLSX*0.5;
+    npcStartingY = NUMCELLSY*0.5;
+    printf("%f, %f",npcStartingX,npcStartingY);
     srand(time(0)); 
     if (argc>1){
         numNPCS=atoi(argv[1]);
@@ -116,7 +137,8 @@ int main(int argc, char **argv) {
 
     // Initialize SDL
     CHECK_ERROR(SDL_Init(SDL_INIT_VIDEO) != 0, SDL_GetError());
-    CHECK_ERROR(IMG_Init(IMG_INIT_PNG)== NULL, SDL_GetError());
+    CHECK_ERROR(IMG_Init(IMG_INIT_PNG)<0, SDL_GetError());
+    TTF_Init();
     
 
     // Create an SDL window
@@ -144,16 +166,16 @@ int main(int argc, char **argv) {
     int framesFour;
     int framesEight;
     int framesTwo;
+    int pointer=0;
     // Initial renderer color
 
-
-setDirectionPlayerRender();
+    setDirectionPlayerRender();
 
 
     #pragma omp parallel num_threads(numNPCS+2)
     {
         
-        #pragma omp master task //should be the rendering and events processor 
+        #pragma omp master  //should be the rendering and events processor 
         while(running) {
             // Process events and rendering
             SDL_Event event;
@@ -215,18 +237,24 @@ setDirectionPlayerRender();
                         textureRectNPC.y=184;
                         textureRectNPC.x=npcX[framesFour];
                     }
-                    
-                    
                 }
                 SDL_RenderCopy(renderer, spriteSheet, &textureRectNPC, &windowRectNPC);
                 
             }
             
 
-            //RENDER PLAYER   
+            //RENDER PLAYER
+            if(!pacmanIsAlive){
+                textureRectPlayer.y= 249;
+                textureRectPlayer.x = deadframes[pointer%12];
+                
+            }
             windowRectPlayer.x=playerX;
             windowRectPlayer.y=playerY;  
+            
             SDL_RenderCopy(renderer, spriteSheet, &textureRectPlayer, &windowRectPlayer);
+            //RENDER TEXT
+            
             // Draw
             // Show what was drawn
             SDL_RenderPresent(renderer);
@@ -238,6 +266,18 @@ setDirectionPlayerRender();
         #pragma omp single //inertial movement on player
             {
                 while(running){
+                    while(!pacmanIsAlive){
+                        if(pointer>10){
+                            pacmanIsAlive=true;
+                            playerX=pacmanStartingX*16;
+                            playerY=pacmanStartingY*16;
+                            pointer=0;
+                            setDirectionPlayerRender();
+                            break;
+                        }
+                        pointer++;
+                        msleep(100);
+                    }
                     movePlayer();
                     checkCollision();
                     powerUpDriver();
@@ -336,6 +376,7 @@ void NPCController(int ind){
     if(ind>1){
         int index=ind-2;
         int nextDirChange=0;
+        int delaySpawn=5000;
         while(running){
             if(nextDirChange==0){
                 changeNPCDirection(index,randomInRange(0,3));
@@ -350,6 +391,14 @@ void NPCController(int ind){
 
             }
             nextDirChange-=20;
+            if(!npcs[index].isAlive){
+                delaySpawn-=20;
+                if(delaySpawn<=20){
+                    npcs[index].isAlive=true;
+                    delaySpawn=5000;
+                }
+
+            }
             moveNPC(index);
             msleep(20);
         }
@@ -389,9 +438,12 @@ void checkCollision(){
         if(tmpxNP==tmpxP&&tmpyNP==tmpyP){
             if(npcs[i].isAlive&&npcs[i].isEdible){
                 npcs[i].isAlive=false;
+                score+=pow(2,combo)*100;
+                combo++;
                 printf("Pacman smashed NPC number %d\n",i);
             }
             else if(npcs[i].isAlive&&!npcs[i].isEdible){
+                killPacman();
                 printf("Pacman slayed by NPC number %d\n",i);
             }
         }
@@ -453,6 +505,7 @@ void movePlayer(){
 }
 void collectCoin(int index){
     printf("Coin collected!\n");
+    score+=10;
     cells[index].resType=PATH;
 
 }
@@ -464,6 +517,7 @@ void collectPowerUp(int index){
     stepNPC=0.5;
     endingPowerUp=false;
     currentPowerUp = POWERUPDURATION;
+    combo=0;
     
     cells[index].resType=PATH;
 
@@ -487,8 +541,8 @@ void initNPCS(){
         npcs[i].isAlive=true;
         npcs[i].direction=BOTTOM;
         npcs[i].isEdible=false;
-        npcs[i].x=16*i+17;
-        npcs[i].y=17;
+        npcs[i].x=16*i+(npcStartingX*16-numNPCS*16/2);
+        npcs[i].y=npcStartingY*16;
     }
     windowRectNPC.x=0;
     windowRectNPC.y=0;
@@ -535,8 +589,8 @@ void initMap(){
 void initPlayerResources(){
     playerDirection=RIGHT;
     
-    playerX=16;
-    playerY=32;
+    playerX=pacmanStartingX*16;
+    playerY=pacmanStartingY*16;
     windowRectPlayer.x = 0;
     windowRectPlayer.y = 0;
     windowRectPlayer.w = 13;
@@ -596,5 +650,8 @@ void keyboardHandler(const char *key){
     else{
         printf("Pressed %s key\n",key);
     }  
+}
+void killPacman(){
+    pacmanIsAlive=false;
 }
 
